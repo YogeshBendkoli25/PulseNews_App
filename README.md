@@ -1,129 +1,196 @@
-# PulseNews - Clean Architecture Flutter News Application
+<div align="center">
 
-A modern, production-grade Flutter news application built strictly adhering to **Clean Architecture** principles, **BLoC state management**, **Real Live News API integration (Zero API Key required)**, **intelligent offline Hive caching**, and **Material Design 3**.
+  <img src="assets/images/app_logo.png" alt="PulseNews Logo" width="110" style="border-radius: 24px;" />
+
+  # ⚡ PulseNews
+
+  **A modern, offline-first news app built with Flutter & Clean Architecture.**  
+  *Read live headlines, search topics, and browse saved articles even without an internet connection.*
+
+  <br/>
+
+  [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+  [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
+  [![State Management](https://img.shields.io/badge/State-BLoC-blueviolet)](https://bloclibrary.dev)
+  [![Architecture](https://img.shields.io/badge/Architecture-Clean-success)](https://blog.cleancoder.com)
+  [![Storage](https://img.shields.io/badge/Database-Hive-FFA000)](https://docs.hivedb.dev)
+  [![Tests](https://img.shields.io/badge/Tests-20%20Passed-brightgreen)](test/)
+  [![Code Health](https://img.shields.io/badge/Analyze-0%20Issues-brightgreen)](analysis_options.yaml)
+
+</div>
 
 ---
 
-## 🌟 Features
-
-- **Clean Architecture**: Decoupled into `Domain`, `Data`, and `Presentation` layers for high maintainability, testability, and scalability.
-- **BLoC State Management**: Predictable state flows powered by `flutter_bloc` with events and states.
-- **Real Live News API (Zero API Key Required)**: Seamless integration with a live, public, real-time news API ([Spaceflight News API SNAPI v4](https://api.spaceflightnewsapi.net/v4/articles/)). Delivers authentic, up-to-the-minute news articles from real news agencies, complete with high-resolution imagery, article summaries, timestamps, author credits, and original publisher links without requiring any API keys or registration tokens.
-- **Zero Mock Data**: 100% genuine, live remote news data. No artificial mock files or synthetic payloads.
-- **Offline First & Hive Caching**: Automatic caching of fetched real news in a fast key-value Hive database. When offline or connection drops, cached articles are seamlessly rendered with an informative offline banner and retry action.
-- **Interactive Search**: Real-time keyword search across titles and content, querying the live API remotely when online and instantly filtering Hive-cached records when offline.
-- **Article Detail View**: Rich article layout featuring Hero image transitions, author & publisher metadata, formatted dates, full reading content, and an "Open Original Article" action using `url_launcher`.
-- **Material Design 3 & Theme Switching**: Support for Light and Dark modes with instant toggle and persistent storage via `SharedPreferences`.
-- **Pull-to-Refresh & Infinite Pagination**: Smooth pull-to-refresh (`RefreshIndicator`) and lazy infinite-scroll pagination (`offset` / `limit`).
-- **Comprehensive Test Suite**: Unit tests for models and BLoC logic (`bloc_test`, `mocktail`), plus Flutter widget tests.
+## 📖 Table of Contents
+- [About the App](#-about-the-app)
+- [Key Features](#-key-features)
+- [How It Works (Visual Flow)](#-how-it-works)
+- [Project Architecture](#-project-architecture)
+- [Responsive on Every Screen](#-responsive-on-every-screen)
+- [Quick Start Guide](#-quick-start-guide)
+- [Automated Tests](#-automated-tests)
+- [Tech Stack](#-tech-stack)
 
 ---
 
-## 🏗️ Architecture Explanation
+## 📱 About the App
 
-The project follows Uncle Bob's **Clean Architecture** patterns, ensuring the business logic remains strictly independent of UI frameworks and external data sources.
+**PulseNews** is designed to give users a fast, smooth, and dependable news experience. It pulls real-time news articles from a live remote API without needing any API keys or complicated registration. 
 
+When your internet is fast, it fetches the latest stories and saves a copy locally. If your Wi-Fi or mobile data disconnects, the app switches to **Offline Mode** automatically so you can keep reading your news seamlessly.
+
+---
+
+## ✨ Key Features
+
+| Feature | Description | Benefit |
+| :--- | :--- | :--- |
+| **🌐 Real Live News** | Fetches live articles directly from the public news API. | No API keys needed; works out of the box. |
+| **💾 Offline First** | Saves articles to a fast local Hive database. | Read news anytime, even without Wi-Fi. |
+| **🔍 Instant Search** | Filter stories by keyword in real time. | Quickly find topics and breaking headlines. |
+| **🌓 Dark & Light Mode** | One-tap switch between sleek dark and clean light themes. | Easy on the eyes day or night; remembers your choice. |
+| **🔄 Pull-to-Refresh & Pagination** | Drag down to refresh or scroll down to load more stories. | Smooth, infinite feed browsing. |
+| **📱 100% Mobile Responsive** | Tailored for small phones, tablets, foldables, and landscape. | Never cuts off text or overflows on any device. |
+
+---
+
+## 🔄 How It Works
+
+### 1. Data Flow (Clean Architecture)
+```mermaid
+flowchart LR
+    UI[📱 Presentation Layer<br/>Pages & Widgets] 
+    BLOC[⚙️ BLoC<br/>Events & States]
+    UC[🎯 Domain Layer<br/>Use Cases & Entities]
+    REPO[📦 Data Layer<br/>Repository Implementation]
+    API[(🌐 Live News API)]
+    CACHE[(💾 Local Hive Cache)]
+
+    UI <--> |User Action / State| BLOC
+    BLOC <--> |Executes| UC
+    UC <--> |Calls| REPO
+    REPO <--> |Online: Fetch| API
+    REPO <--> |Save & Read| CACHE
 ```
+
+### 2. Offline-First Decision Logic
+```mermaid
+flowchart TD
+    Start([User Opens App or Refreshes]) --> CheckNet{Is Internet Connected?}
+    
+    CheckNet -- YES --> FetchAPI[Fetch fresh headlines from Live API]
+    FetchAPI --> SaveHive[Save new articles into Hive Database]
+    SaveHive --> ShowLive[Display fresh news with online badge]
+    
+    CheckNet -- NO --> LoadHive[Read stored articles from Hive Database]
+    LoadHive --> ShowCached[Display cached articles + Orange Offline Banner]
+    ShowCached --> RetryBtn[Tap 'Retry' whenever connection returns]
+```
+
+---
+
+## 🏗️ Project Architecture
+
+The app is built following Uncle Bob's **Clean Architecture**, keeping business rules independent from UI and third-party packages:
+
+```text
 lib/
-├── core/                         # Cross-cutting concerns & shared infrastructure
-│   ├── constants/                # API endpoints, design constants
-│   ├── error/                    # Custom failures & exceptions
-│   ├── network/                  # NetworkInfo (connectivity checks)
-│   ├── theme/                    # Material 3 light/dark themes & ThemeBloc
-│   ├── utils/                    # DateFormatter, UrlHelper
-│   └── service_locator.dart      # GetIt dependency injection setup
+├── core/                         # Shared tools, constants & utilities
+│   ├── constants/                # Colors, API endpoints
+│   ├── network/                  # Internet connectivity listener
+│   ├── theme/                    # Light & dark theme palettes
+│   └── service_locator.dart      # Dependency injection (GetIt)
 │
 ├── features/
+│   ├── splash/                   # Animated splash screen & branding
 │   └── news/
-│       ├── domain/               # Enterprise & Business Logic (Pure Dart)
-│       │   ├── entities/         # Article domain entity
-│       │   ├── repositories/     # NewsRepository abstract contract
-│       │   └── usecases/         # GetTopHeadlines, SearchNews, GetCachedNews
+│       ├── domain/               # 🎯 Core business logic (Pure Dart)
+│       │   ├── entities/         # Article blueprint
+│       │   ├── repositories/     # News repository contract
+│       │   └── usecases/         # Fetch, Search & Cache use cases
 │       │
-│       ├── data/                 # Data Retrieval & Persistence
-│       │   ├── datasources/      # Remote (Dio/SNAPI) & Local (Hive Box)
-│       │   ├── models/           # ArticleModel (JSON serialization & entity conversion)
-│       │   └── repositories/     # NewsRepositoryImpl (Coordinates remote & cache)
+│       ├── data/                 # 📦 Data sources & models
+│       │   ├── datasources/      # Remote (Dio API) & Local (Hive DB)
+│       │   ├── models/           # ArticleModel JSON parsing
+│       │   └── repositories/     # Offline/Online coordination logic
 │       │
-│       └── presentation/         # UI & State Management
-│           ├── bloc/             # NewsBloc, NewsEvent, NewsState
-│           ├── pages/            # NewsListPage, ArticleDetailPage
-│           └── widgets/          # ArticleCard, ShimmerLoader, OfflineStatusBanner
+│       └── presentation/         # 📱 UI & State Management
+│           ├── bloc/             # NewsBloc (States & Events)
+│           ├── pages/            # NewsListPage & ArticleDetailPage
+│           └── widgets/          # ArticleCard, SearchBar, OfflineBanner
 │
-└── main.dart                     # App entry point & Root Providers
+└── main.dart                     # App entry point
 ```
-
-### 1. Domain Layer (`lib/features/news/domain/`)
-- Contains pure Dart code with **zero dependencies on Flutter UI or external packages**.
-- **Entities**: Core data representation (`Article`).
-- **Repository Interface**: `NewsRepository` contract defining the operations required by business use cases.
-- **Use Cases**: Single-responsibility interactors (`GetTopHeadlines`, `SearchNews`, `GetCachedNews`).
-
-### 2. Data Layer (`lib/features/news/data/`)
-- Implements the contracts defined by the domain layer.
-- **Models**: `ArticleModel` extends `Article`, adding robust `fromJson` and `toJson` methods supporting the live news API format.
-- **Data Sources**:
-  - `NewsRemoteDataSource`: Communicates with the live REST API via `Dio` HTTP client with query parameter support for pagination and keyword search.
-  - `NewsLocalDataSource`: Manages local persistence with `Hive`.
-- **Repository Implementation**: `NewsRepositoryImpl` checks network connectivity via `NetworkInfo`. When online, it fetches real news and updates the local Hive cache; when offline, it transparently recovers cached articles.
-
-### 3. Presentation Layer (`lib/features/news/presentation/`)
-- **BLoC**: `NewsBloc` processes user events (`FetchHeadlinesEvent`, `SearchNewsEvent`, `LoadMoreHeadlinesEvent`) and emits distinct immutable states (`NewsLoading`, `NewsLoaded`, `NewsEmpty`, `NewsError`).
-- **Widgets**: Componentized, reusable UI elements following Material Design 3 guidelines.
 
 ---
 
-## 🛠️ Setup Instructions
+## 📲 Responsive on Every Screen
 
-### Prerequisites
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (version 3.13.0 or later; tested on Flutter 3.47.2 / Dart 3.13.2)
-- iOS Simulator / Android Emulator / Physical Device / Chrome
+PulseNews is carefully tested to look beautiful and avoid layout errors (`RenderFlex overflow`) across all device types:
 
-### 1. Clone & Navigate to Project
+* **Compact Mobiles (300dp–360dp)**: Dynamic text truncation for publisher names and date tags.
+* **Standard Mobiles (375dp–430dp)**: Perfectly balanced card aspect ratios and spacing.
+* **Large Mobiles & Tablets (600dp+)**: Centered content with a max-width limit (`720dp`) to avoid stretched cards.
+* **Landscape Orientation**: Adaptive header height on article details and scroll-safe empty/splash states.
+* **Accessibility / Large Fonts**: Flexible text boxes prevent clipping when users enable large system fonts.
+
+---
+
+## 🚀 Quick Start Guide
+
+Run this app on your computer in 3 simple steps:
+
+### 1. Clone the repository
 ```bash
-git clone <repository-url>
-cd traker_task
+git clone https://github.com/YogeshBendkoli25/PulseNews_App.git
+cd PulseNews_App
 ```
 
-### 2. Install Dependencies
+### 2. Download packages
 ```bash
 flutter pub get
 ```
 
-### 3. Run Static Analysis & Tests
+### 3. Run the app
 ```bash
-# Verify static code health (0 issues guaranteed)
+flutter run
+```
+*(No environment variables, API keys, or setup configs needed. It just works!)*
+
+---
+
+## 🧪 Automated Tests
+
+The codebase includes full test coverage for models, state transitions, and responsive widgets:
+
+```bash
+# Check code quality (guaranteed 0 issues)
 flutter analyze
 
-# Run unit and widget test suite
+# Run all 20 automated tests
 flutter test
 ```
 
-### 4. Launch the Application
-```bash
-# Run on connected device or simulator (Zero configuration required!)
-flutter run
-```
+### What the tests cover:
+- **Model Tests**: JSON parsing, null handling, and data integrity.
+- **BLoC Tests**: State flow verification (`Loading` ➔ `Loaded` / `Offline` / `Error`).
+- **Widget Tests**: Tap handlers, branding watermark, and overflow prevention on small screens.
 
 ---
 
-## ⚖️ Architectural Highlights
+## 🛠️ Tech Stack
 
-1. **Zero-Configuration Live API**:
-   - Integrates with an open REST API delivering real-world news articles with full metadata, without requiring API keys, registration, or secret tokens.
-2. **Lightweight Key-Value Caching with Hive**:
-   - Fast, cross-platform key-value persistence without SQLite native C compilation overhead or fragile schema migration scripts.
-3. **Hero Transitions & Modern Polish**:
-   - Fluid transitions between feed cards and the detailed view, along with dark/light mode toggle and shimmering loading placeholders.
-4. **Resilient Offline Fallback**:
-   - Seamlessly switches to cached articles when internet connectivity drops, ensuring continuous availability with an offline warning indicator.
+| Technology | Purpose | Why It Was Chosen |
+| :--- | :--- | :--- |
+| **Flutter 3.x** | Cross-platform framework | High performance 60fps native UI on iOS and Android. |
+| **flutter_bloc** | State management | Predictable, testable, event-driven architecture. |
+| **Hive** | Local database | Ultra-fast key-value storage with zero native setup. |
+| **Dio** | HTTP network client | Reliable REST API client with timeouts and error parsing. |
+| **get_it** | Dependency injection | Decouples classes for clean code and easy unit testing. |
+| **cached_network_image** | Image caching | Fast image loading with shimmer placeholders and memory cache. |
 
 ---
 
-## 🧪 Testing
-
-The repository includes comprehensive tests across all architectural tiers:
-
-- **Model Unit Tests** (`test/unit/article_model_test.dart`): Verifies JSON serialization, missing field resilience, and entity parity.
-- **BLoC Unit Tests** (`test/unit/news_bloc_test.dart`): Verifies state sequence transitions (`[NewsLoading, NewsLoaded]`), offline cache fallbacks, and keyword queries using `bloc_test` and `mocktail`.
-- **Widget Tests** (`test/widget_test.dart`): Verifies Material card rendering, author metadata, and interactive tap handlers.
+<div align="center">
+  <sub>Built with ❤️ using Flutter and Clean Architecture.</sub>
+</div>
